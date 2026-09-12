@@ -1,163 +1,182 @@
 # Metodología y resultados de referencia
 
-Detalle del análisis implementado en `analisis.py`. Para instalar, ejecutar y localizar las salidas, consultar el [README](../README.md).
+Este documento resume las reglas implementadas en `analisis.py`, las fórmulas utilizadas y los resultados de referencia. Para instalar, ejecutar y localizar las salidas, consultar el [README](../README.md).
 
-## Series y significado
+## Series utilizadas
 
-Las descripciones siguientes expresan el significado utilizado en el código y documentación del proyecto; no constituyen una reconstrucción de las metodologías contractuales de los índices.
-
-| Serie | Qué representa en el trabajo | Campo y unidad | Función |
+| Serie | Representación en el trabajo | Campo utilizado | Función |
 | --- | --- | --- | --- |
-| VIX | Índice de volatilidad utilizado como señal de régimen. | `CLOSE`, puntos del VIX. | Clasifica el mes siguiente; no se invierte capital en VIX. |
-| PUT | Índice de estrategia de venta de puts respaldada por letras del Tesoro. | `PUT`, puntos de índice. | Inversión permanente o activo de una condicional. |
-| CNDR | Índice de estrategia con opciones de tipo iron condor. | `CNDR`, puntos de índice. | Inversión permanente o activo de una condicional. |
-| PPUT | Índice que combina exposición al S&P 500 con puts de protección. | `PPUT`, puntos de índice. | Inversión permanente o activo de una condicional. |
-| SPY | ETF utilizado como benchmark; no se presenta como el índice oficial S&P 500 Total Return. | `adjClose`, precio ajustado del ETF en USD por participación. | Inversión permanente y activo de las condicionales cuando la señal no activa su índice. |
+| VIX | Índice de volatilidad utilizado como señal de régimen | `CLOSE` | Clasifica el mes siguiente |
+| PUT | Índice de estrategia de venta de puts respaldada por letras del Tesoro | `PUT` | Inversión permanente o activo de una condicional |
+| CNDR | Índice de estrategia iron condor | `CNDR` | Inversión permanente o activo de una condicional |
+| PPUT | Índice que combina exposición al S&P 500 con puts de protección | `PPUT` | Inversión permanente o activo de una condicional |
+| SPY | ETF utilizado como benchmark | `adjClose` | Inversión permanente y activo de las condicionales cuando no se activa su índice |
 
-Se utilizan niveles publicados; no se reconstruyen operaciones de opciones ni se añade apalancamiento. Los puntos de los distintos índices no se comparan directamente como montos de dinero: se calculan sus retornos y se aplican a un capital inicial común.
+Se utilizan los niveles publicados de los índices y no se reconstruyen operaciones individuales con opciones. Los niveles de PUT, CNDR y PPUT se transforman en rendimientos antes de aplicarlos al capital inicial común.
 
-## Datos y transformaciones
+## Datos y validación
 
-| Archivo | Campo fecha y formato | Valor utilizado |
+Los cinco archivos se encuentran en `datos_originales/`:
+
+| Archivo | Campo de fecha | Valor utilizado |
 | --- | --- | --- |
-| VIX.csv | DATE, MM/DD/AAAA | CLOSE |
-| PUT.csv | DATE, MM/DD/AAAA | PUT |
-| CNDR.csv | DATE, MM/DD/AAAA | CNDR |
-| PPUT.csv | DATE, MM/DD/AAAA | PPUT |
-| SPY_Tiingo.csv | date, AAAA-MM-DD | adjClose |
+| `VIX.csv` | `DATE`, MM/DD/AAAA | `CLOSE` |
+| `PUT.csv` | `DATE`, MM/DD/AAAA | `PUT` |
+| `CNDR.csv` | `DATE`, MM/DD/AAAA | `CNDR` |
+| `PPUT.csv` | `DATE`, MM/DD/AAAA | `PPUT` |
+| `SPY_Tiingo.csv` | `date`, AAAA-MM-DD | `adjClose` |
 
-Se verifica encabezado, cantidad de columnas, coma, punto decimal y lectura
-UTF-8 compatible con BOM. Fechas inválidas o duplicadas detienen el proceso.
-Valores ausentes, no numéricos, infinitos, cero o negativos se registran y
-quedan ausentes. Las filas se ordenan sólo en la copia de trabajo.
+El análisis cubre de enero de 2007 a diciembre de 2025. Enero de 2007 se utiliza como base y los rendimientos van de febrero de 2007 a diciembre de 2025.
 
-El período diario es **enero de 2007–diciembre de 2025**, con calendario común
-NYSE de `pandas_market_calendars`. El calendario es una regla de validación,
-no una fuente de precios. Se documentan cobertura completa y exclusiones
-fuera de período/calendario, sin declarar erróneo el dato de origen.
+El programa verifica encabezados, formato de fechas, duplicados y valores numéricos positivos. Las observaciones se restringen al calendario NYSE mediante `pandas_market_calendars`.
 
-Se exige un valor válido en la **última sesión NYSE del mes**, sin sustituirlo
-por un dato anterior. Un faltante intramensual no invalida el retorno si
-ambos cierres necesarios existen. No se interpola ni se arrastran datos.
-Los niveles consecutivos iguales se conservan: no prueban imputación de origen.
-Se verifican las huellas SHA-256 de los originales antes y después del cálculo.
+Se exige un valor válido en la última sesión NYSE de cada mes. No se interpola, no se arrastran precios y no se sustituye un cierre faltante por un dato anterior. Los faltantes intramensuales se documentan, pero no invalidan un retorno si existen los dos cierres mensuales requeridos.
 
-La [guía de fuentes y descarga](descargas.md) explica URLs,
-procedimientos conocidos y límites de procedencia. Las fechas exactas de
-descarga siguen pendientes. Para SPY se conservan la evidencia de copia local y el pedido/procedimiento
-recuperado; sigue pendiente vincular por huella esa ejecución con este CSV.
+Los archivos originales no se modifican durante la ejecución. El flujo registra controles de cobertura e integridad en `resultados/controles/`.
 
-## Carteras y fórmulas
+La [guía de fuentes y descarga](descargas.md) documenta los proveedores, enlaces oficiales y el procedimiento para volver a obtener las series.
 
-**Principal:** siempre SPY, siempre PUT, siempre CNDR, siempre PPUT y tres
-carteras que usan, respectivamente, PUT, CNDR o PPUT si el **VIX del cierre
-anterior es >= 30**; usan SPY el resto. Cada condicional mantiene su índice.
-**Sensibilidad:** sólo las tres condicionales con umbral 25. Las permanentes
-se presentan una sola vez y no necesitan señal VIX.
+## Construcción de las carteras
 
-Por ejemplo, febrero de 2007 usa el VIX del 31/01/2007. La asignación teórica
-es del 100% a un activo cada mes; no se usa el VIX al final del mes del retorno.
-No se modelan precios de ejecución ni la posibilidad operativa de rebalancear
-exactamente en el cierre en que se observa la señal.
+### Escenario principal
+
+Se comparan siete carteras:
+
+- Siempre SPY.
+- Siempre PUT.
+- Siempre CNDR.
+- Siempre PPUT.
+- PUT condicional.
+- CNDR condicional.
+- PPUT condicional.
+
+Las tres condicionales utilizan su índice asignado cuando el **VIX del cierre del mes anterior es mayor o igual a 30**. En los demás meses mantienen SPY.
+
+Por ejemplo, el rendimiento de febrero de 2007 utiliza como señal el VIX del cierre de enero de 2007. El VIX observado al final del propio mes de rendimiento no interviene en la decisión.
+
+### Sensibilidad
+
+La misma regla se repite con un umbral de **25**. En este escenario se recalculan únicamente las tres carteras condicionales. Las cuatro inversiones permanentes conservan sus resultados.
+
+Con umbral 30 se observan 22 meses de régimen alto y 205 de régimen bajo. Con umbral 25 se observan 45 meses altos y 182 bajos.
+
+## Fórmulas
+
+Para cada activo:
 
 ```text
 r[t] = nivel[t] / nivel[t-1] - 1
-C[enero 2007] = USD 10.000
-C[t] = C[t-1] × (1 + retorno asignado[t])
-Rendimiento acumulado = C[final] / 10.000 - 1
-Rendimiento anual compuesto = (C[final] / 10.000)^(12 / cantidad de meses) - 1
-Caída[t] = C[t] / máximo(C[enero 2007], ..., C[t]) - 1
-Máxima caída acumulada, medida con cierres mensuales = mínimo(Caída[t])
 ```
 
-Son **228 cierres y 227 rendimientos**, de febrero de 2007 a diciembre de
-2025. Enero aporta la base. No hay aportes ni retiros. SPY es un ETF y usa
-`adjClose`, sin volver a sumar dividendos. Se usan los niveles publicados
-de los índices, sin reconstruir contratos ni agregar apalancamiento.
+El capital inicial es:
 
-La máxima caída incluye el capital inicial, es negativa o cero y **no es
-el peor retorno de un mes**, ni mide caídas intramensuales. El CAGR usa 227
-meses de rendimiento, no 228 cierres. Si falta señal o retorno necesario,
-la trayectoria queda incompleta desde ese mes y no se reanuda; sus cuatro
-métricas finales quedan vacías. Se informa el primer mes y motivo. Un dato
-faltante de un activo no seleccionado no afecta a la cartera.
+```text
+C[enero 2007] = USD 10.000
+```
 
-## Episodios
+Y cada mes se actualiza como:
 
-Los grupos son enero 2008–diciembre 2009, enero–diciembre 2020, enero–diciembre
-2022 y todos los meses restantes: **24, 12, 12 y 179 meses**, incluidos aquellos
-en SPY. Para cada grupo y cada condicional:
+```text
+C[t] = C[t-1] × (1 + retorno asignado[t])
+```
+
+El rendimiento acumulado se calcula como:
+
+```text
+C[final] / C[inicial] - 1
+```
+
+El rendimiento anual compuesto utiliza los 227 meses de rendimiento:
+
+```text
+(C[final] / C[inicial])^(12 / 227) - 1
+```
+
+La caída desde máximos se define como:
+
+```text
+Caída[t] = C[t] / máximo(C[enero 2007], ..., C[t]) - 1
+```
+
+La máxima caída acumulada es el valor más negativo de esa serie. Se calcula con cierres mensuales e incluye el capital inicial.
+
+## Regla ante faltantes
+
+Si falta una señal VIX necesaria o un rendimiento del activo que corresponde utilizar, la trayectoria afectada queda incompleta desde ese mes y no se reanuda posteriormente. No se reemplazan faltantes por cero ni se saltan meses.
+
+Un faltante de un activo que no corresponde utilizar ese mes no afecta a la cartera.
+
+## Descriptivos por régimen
+
+Para cada umbral y régimen se calculan:
+
+- cantidad de observaciones;
+- rendimiento medio;
+- mediana;
+- desvío estándar muestral (`ddof=1`);
+- porcentaje de meses negativos;
+- peor rendimiento mensual;
+- diferencia media frente a SPY en meses pareados.
+
+Estas métricas son descriptivas y no se anualizan.
+
+## Aporte relativo de episodios
+
+Los 227 meses de rendimiento se agrupan en:
+
+- 2008 y 2009: 24 meses;
+- 2020: 12 meses;
+- 2022: 12 meses;
+- meses restantes: 179 meses.
+
+Para cada grupo y cartera condicional:
 
 ```text
 Factor relativo = producto(1 + retorno cartera) / producto(1 + retorno SPY)
 Ventaja relativa = factor relativo - 1
-Producto de los cuatro factores = capital final cartera / capital final SPY
 ```
 
-**Los porcentajes no se suman:** +10% y -10% producen 1,10 × 0,90 = 0,99,
-ventaja -1%. «Meses restantes» es una agrupación de atribución, no un período
-continuo: no se calcula una caída concatenándolos. Todos los episodios siguen
-en las métricas generales. Un retorno aplicado o SPY faltante hace incompleto
-el grupo, sin omitir el mes; tras interrumpirse una trayectoria tampoco se
-aplican sus retornos posteriores. Un grupo vacío tendría factor 1 y estado
-`sin_meses`.
+Los porcentajes de los grupos no son aditivos. Los factores relativos se multiplican para reconstruir la diferencia total frente a SPY.
 
-## Lectura de los descriptivos
+La agrupación de “meses restantes” se utiliza únicamente para atribución y no constituye un período continuo para calcular caídas.
 
-Se informa media, mediana, desvío muestral (`ddof=1`), proporción
-de meses negativos y peor retorno mensual, sin anualizar.
-`diferencia_media_vs_spy_pp` es la media de diferencias en **meses pareados**,
-en puntos porcentuales, con `cantidad_pares_vs_spy`. Grupos vacíos: n=0 y
-métricas vacías; con n<2 no hay desvío. Alto incluye la igualdad; bajo significa
-VIX previo inferior al umbral. Son descriptivos, no carteras con VIX bajo.
+## Resultados de referencia
 
-Las asignaciones se calculan internamente en `simular_carteras`; no se exportan en un CSV separado. La regla, la señal previa y los retornos se pueden seguir en las tablas mensuales y en `comparacion_carteras.csv`.
+La muestra final contiene 228 cierres mensuales y 227 rendimientos. Las diez carteras quedan completas.
 
-## Resultados con los originales conservados
+| Cartera | Capital final USD | Rendimiento anual compuesto | Máxima caída |
+| --- | ---: | ---: | ---: |
+| Siempre SPY | 67.513,02 | 10,62% | -50,80% |
+| Siempre PUT | 35.452,00 | 6,92% | -32,66% |
+| Siempre CNDR | 10.990,60 | 0,50% | -18,96% |
+| Siempre PPUT | 43.177,26 | 8,04% | -38,92% |
+| PUT condicional 30 | 61.313,61 | 10,06% | -45,39% |
+| CNDR condicional 30 | 55.433,86 | 9,48% | -30,94% |
+| PPUT condicional 30 | 70.971,19 | 10,92% | -36,70% |
+| PUT condicional 25 | 61.104,53 | 10,04% | -43,14% |
+| CNDR condicional 25 | 46.483,85 | 8,46% | -28,46% |
+| PPUT condicional 25 | 64.505,18 | 10,36% | -38,50% |
 
-Se verifican 4.780 sesiones NYSE. CNDR y PPUT tienen seis faltantes diarios,
-el 03/12/2018, 05/07/2019 y 16/10/2020, sin afectar cierres. Se excluyen 27
-observaciones VIX fuera del calendario y 15.326 observaciones fuera del período;
-se conservan 56 repeticiones. No hay duplicados ni valores inválidos utilizados.
-Los cinco cierres coinciden en 228 meses; las diez carteras están completas.
-VIX 30: 22 meses altos y 205 bajos; VIX 25: 45 altos y 182 bajos.
+Con umbral 30, las tres condicionales presentan una máxima caída menos profunda que SPY. PPUT condicional es la única que además termina con mayor capital final que SPY.
 
-| Cartera | Capital final USD | Acumulado % | Anual compuesto % | Máxima caída acumulada, medida con cierres mensuales % |
+Con umbral 25, ninguna condicional supera el capital final de SPY, aunque las tres conservan una máxima caída menor que el benchmark. Por lo tanto, la ventaja de rentabilidad observada para PPUT con umbral 30 no es robusta al cambio de umbral.
+
+## Episodios con umbral 30
+
+| Condicional | 2008-2009 | 2020 | 2022 | Resto |
 | --- | ---: | ---: | ---: | ---: |
-| Siempre SPY | 67.513,02 | 575,13 | 10,62 | -50,80 |
-| Siempre PUT | 35.452,00 | 254,52 | 6,92 | -32,66 |
-| Siempre CNDR | 10.990,60 | 9,91 | 0,50 | -18,96 |
-| Siempre PPUT | 43.177,26 | 331,77 | 8,04 | -38,92 |
-| PUT condicional 30 | 61.313,61 | 513,14 | 10,06 | -45,39 |
-| CNDR condicional 30 | 55.433,86 | 454,34 | 9,48 | -30,94 |
-| PPUT condicional 30 | 70.971,19 | 609,71 | 10,92 | -36,70 |
-| PUT condicional 25 — sensibilidad | 61.104,53 | 511,05 | 10,04 | -43,14 |
-| CNDR condicional 25 — sensibilidad | 46.483,85 | 364,84 | 8,46 | -28,46 |
-| PPUT condicional 25 — sensibilidad | 64.505,18 | 545,05 | 10,36 | -38,50 |
+| PUT | 3,78% | -11,12% | -5,04% | 3,69% |
+| CNDR | 17,84% | -19,54% | -11,76% | -1,86% |
+| PPUT | 14,27% | 3,32% | -4,60% | -6,67% |
 
-Las tres condicionales 30 reducen la máxima caída frente a SPY. PUT y CNDR
-terminan con menos capital; PPUT lo supera en aproximadamente 5,12% relativo.
-Frente a sus índices permanentes, las tres condicionales 30 producen mayor
-capital, pero PUT y CNDR tienen caídas máximas más profundas; PPUT también
-reduce esa caída. La protección depende del comparador y de la medida elegida.
+Los resultados no son uniformes entre episodios. 2008-2009 favorece relativamente a las tres reglas, 2022 perjudica a las tres y en 2020 sólo PPUT presenta una ventaja positiva frente a SPY.
 
-| Ventaja relativa del grupo | 2008–2009 % | 2020 % | 2022 % | Meses restantes % |
-| --- | ---: | ---: | ---: | ---: |
-| PUT condicional 30 | 3,78 | -11,12 | -5,04 | 3,69 |
-| CNDR condicional 30 | 17,84 | -19,54 | -11,76 | -1,86 |
-| PPUT condicional 30 | 14,27 | 3,32 | -4,60 | -6,67 |
+## Supuestos y limitaciones
 
-2008–2009 aporta ventaja relativa a las tres; 2022 aporta desventaja a todas.
-En 2020 sólo PPUT tiene aporte positivo. PPUT compensa 2022 y el resto con
-2008–2009 y 2020; no implica protección en cada crisis. Con umbral 25 ninguna
-condicional supera el capital final de SPY: el resultado favorable de PPUT 30
-no se mantiene en esa sensibilidad. No se infiere superioridad futura.
+La simulación utiliza índices teóricos y no reconstruye contratos negociables. No se modelan costos adicionales de rotación, impuestos ni precios efectivos de ejecución.
 
-## Orientación para el informe
+SPY se trata como ETF y utiliza `adjClose`, por lo que no se agregan dividendos nuevamente.
 
-Una estructura de **8 páginas**: pregunta y alcance (1); datos, fuentes y VIX
-(1); reglas y fórmulas (1); comparación principal y capitales (2); caídas y
-episodios (1); sensibilidad y descriptivos (1); conclusiones, límites y
-referencias (1). Se puede ajustar a 6–10 páginas manteniendo la misma pregunta
-y los tres gráficos; la bitácora y controles sirven como respaldo técnico.
+Las caídas se miden con cierres mensuales y pueden subestimar pérdidas intramensuales. La muestra contiene pocos meses de VIX alto y el enfoque fue refinado después de observar resultados iniciales. No se realizaron pruebas de significación ni una evaluación fuera de muestra.
 
+Por estos motivos, los resultados se interpretan como una comparación histórica de rendimiento y caídas dentro de la muestra, no como evidencia de una estrategia óptima o de superioridad futura.
