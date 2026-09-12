@@ -1,0 +1,47 @@
+# Entornos de trabajo locales
+.venv/
+venv/
+env/
+.conda/
+
+# Caches y bytecode de Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.cache/
+.ipynb_checkpoints/
+.coverage
+.coverage.*
+htmlcov/
+
+# Credenciales y configuracion privada
+.env
+.env.*
+!.env.example
+.secrets/
+secrets/
+privado/
+privados/
+*.pem
+*.key
+credentials.json
+credentials*.json
+token.json
+token*.json
+
+# Configuracion local del editor y sistema operativo
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporales; los datos originales y resultados finales SI se versionan
+*.tmp
+*.temp
+*.log
+~$*
+*.swp
+*.swo

@@ -1,0 +1,117 @@
+{
+  "estado": "correcto",
+  "error": null,
+  "fecha_ejecucion_utc": "2026-09-11T20:05:53.068162+00:00",
+  "datos_desde": "2007-01-01",
+  "datos_hasta": "2025-12-31",
+  "rendimientos_desde": "2007-02-01",
+  "rendimientos_hasta": "2025-12-31",
+  "mes_base": "2007-01",
+  "benchmark": "SPY: ETF, cierre ajustado adjClose de SPY_Tiingo.csv",
+  "umbral_principal": 30,
+  "umbral_sensibilidad": 25,
+  "clasificacion": "alto si VIX del cierre del mes anterior >= umbral; bajo si <",
+  "calendario_comun": "NYSE",
+  "regla_cierre": "Exigir dato finito y positivo en la última sesión NYSE del mes",
+  "imputacion": false,
+  "desviacion_estandar_ddof": 1,
+  "anualizacion": "CAGR = (capital final / capital inicial) ** (12 / meses) - 1; descriptivos sin anualizar",
+  "comparacion_spy": "Media de diferencias en meses pareados; puntos porcentuales",
+  "simulacion_carteras": {
+    "rotulo": "Simulación teórica con índices",
+    "capital_inicial_usd": 10000.0,
+    "supuestos": "Sin costos adicionales de rotación ni impuestos; SPY usa adjClose sin sumar dividendos",
+    "aportes_y_retiros": false,
+    "capitalizacion": "Capital anterior * (1 + rendimiento del activo asignado)",
+    "faltantes": "Interrupción permanente por cartera; no rellenar ni saltar meses",
+    "maxima_caida": "Máxima caída acumulada, medida con cierres mensuales",
+    "formula_caida": "Mínimo de capital / máximo acumulado - 1; incluye capital inicial",
+    "frecuencia_maxima_caida": "mensual",
+    "control_permanentes": "Capital inicial * nivel / nivel base, donde comparable; rtol=1e-12, atol=1e-8 USD"
+  },
+  "fuentes_precios": [
+    "VIX.csv",
+    "PUT.csv",
+    "CNDR.csv",
+    "PPUT.csv",
+    "SPY_Tiingo.csv"
+  ],
+  "incidencias_por_tipo": {
+    "fuera_periodo": 15326,
+    "valores_repetidos": 56,
+    "fuera_calendario_comun": 27,
+    "faltantes_diarios": 6
+  },
+  "filas_controles": {
+    "calendario_diario": 4807,
+    "faltantes_diarios": 6,
+    "valores_repetidos": 56,
+    "cierres_mensuales": 1140,
+    "comparacion_cierres": 228,
+    "exclusiones_rendimientos": 0,
+    "exclusiones_clasificacion_vix_30": 0,
+    "exclusiones_clasificacion_vix_25": 0,
+    "simulaciones_incompletas": 0
+  },
+  "verificaciones": {
+    "identidades_capitalizacion": "verificadas en todos los meses y carteras",
+    "senal_y_fecha_vix_previo": "verificadas",
+    "metricas": "verificadas",
+    "atribucion_por_episodios": "verificada sin sumar porcentajes",
+    "cierres_esperados": 228,
+    "rendimientos_esperados": 227,
+    "cierres_validos_por_serie": {
+      "VIX": 228,
+      "PUT": 228,
+      "CNDR": 228,
+      "PPUT": 228,
+      "SPY": 228
+    },
+    "rendimientos_validos_por_serie": {
+      "PUT": 227,
+      "CNDR": 227,
+      "PPUT": 227,
+      "SPY": 227
+    },
+    "carteras_completas": 10,
+    "carteras_incompletas": 0,
+    "tolerancia": "rtol=1e-12; atol=1e-8 USD/métricas y 1e-12 factores",
+    "regimenes": {
+      "30": {
+        "alto": 22,
+        "bajo": 205
+      },
+      "25": {
+        "alto": 45,
+        "bajo": 182
+      }
+    },
+    "graficos": "Curvas construidas desde capitales_mensuales.csv exportado y verificado; VIX desde sesiones diarias validadas"
+  },
+  "interpretacion": "Enfoque refinado después de observar primeros resultados; no acredita ejecución operativa ni desempeño fuera de muestra",
+  "atribucion": "Producto de factores relativos de 2008-2009, 2020, 2022 y meses restantes; porcentajes no aditivos",
+  "python": "3.14.3",
+  "dependencias": {
+    "pandas": "3.0.5",
+    "numpy": "2.5.3",
+    "matplotlib": "3.11.1",
+    "pandas_market_calendars": "5.4.0",
+    "exchange_calendars": "4.13.2",
+    "tzdata": "2026.3"
+  },
+  "sha256_codigo": "380dae275f5f9b77d7ad2ad17f5c16a95f9c9bef2097659235e47cc3f7d47657",
+  "sha256_requirements": "f1ecb42aad89e06e27c638fd63193f5580a0391706d9b6be7c576e291c2c06cc",
+  "salidas_sha256": {
+    "tablas/aporte_episodios.csv": "66efc1826b5c9e3082da124119a554e127624a48a8b27b35e1de927972cd8ece",
+    "tablas/capitales_mensuales.csv": "de19bb6eee3dce6ab20262114ade34aa62cebf7384860ac6449aced4e5bf2efa",
+    "tablas/comparacion_carteras.csv": "07591e0bc8412ca9a534560728010052229f57579b1f953eb91ec1f3462fe2dc",
+    "tablas/datos_mensuales.csv": "e9bb5cc5de1488547028339e748ba3b40821ef5da95dc5813f02b9f5e9fd4836",
+    "tablas/descriptivos_regimen.csv": "1646bcb037c295d96984516953252dbac1af4b56f2f8a9d4d4ff36b484ba4c16",
+    "graficos/01_vix_umbrales.png": "e05b088853fb2a0f8d80a43f23051938d022a2facab3cf99d384ce564d191454",
+    "graficos/02_capitales_vix_30.png": "407b40ad716bcb29b507a12e33fb208bacd8fbb530acc02fd320c63c871fd91c",
+    "graficos/03_caidas_vix_30.png": "f002cbd1e7b54372a662767849328c6e8d3fd3ce23cd8884b293667411d474dc",
+    "controles/cierres_mensuales.csv": "17b9f559e0ca52122f364c3780c39a193d57d05edad4408816ad6709f43b2e0f",
+    "controles/fuentes_verificadas.csv": "afc831d5cecb40d27147f33722b41bccac4ad4a55e2f0788335f55448caad510",
+    "controles/incidencias.csv": "207004ee230fbfb34dad066516ac4e020d98ca184f96ba6c9b97e37ab1391aeb"
+  }
+}

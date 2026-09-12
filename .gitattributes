@@ -1,0 +1,3 @@
+# Conservar los bytes y SHA-256 del codigo, los originales y las salidas
+# al agregar o extraer archivos con Git, incluso con core.autocrlf=true.
+* -text
