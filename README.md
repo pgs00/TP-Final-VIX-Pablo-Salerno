@@ -1,147 +1,128 @@
 # Trabajo final de Ingeniería Financiera — UCEMA
 
-El proyecto compara el rendimiento y las caídas de PUT, CNDR y PPUT cuando
-se activan con **VIX del cierre mensual anterior ≥ 30**, frente a mantener
-esos índices permanentemente o invertir siempre en SPY. El umbral 25 se usa
-como sensibilidad, sin optimización. El estudio abarca enero de 2007 a
-diciembre de 2025; enero aporta el capital inicial de USD 10.000.
+Este proyecto compara el rendimiento y las caídas de estrategias con opciones representadas por los índices **PUT**, **CNDR** y **PPUT** cuando se activan con el **VIX del cierre mensual anterior ≥ 30**, frente a mantener esos índices permanentemente o invertir siempre en **SPY**. El umbral 25 se utiliza como análisis de sensibilidad, sin optimización.
 
-`analisis.py` es el único punto de entrada. Lee cinco CSV locales y genera
-una simulación teórica con índices. Los resultados finales están únicamente
-en `resultados/`.
+El estudio abarca de enero de 2007 a diciembre de 2025. Enero de 2007 aporta el capital inicial de USD 10.000 y los rendimientos se calculan desde febrero de 2007 hasta diciembre de 2025.
 
-## Estructura
+`analisis.py` es el único punto de entrada. Lee cinco CSV locales, valida la muestra, construye las carteras y genera tablas, gráficos y controles de consistencia.
+
+## Estructura del repositorio
 
 ```text
-README.md                 Guía de ejecución y lectura de resultados
-analisis.py               Análisis, exportación y controles
-requirements.txt          Versiones de las dependencias
-.gitignore                Exclusiones del entorno y archivos locales/privados
-.gitattributes            Conservación de bytes y huellas al usar Git
-datos_originales/         Los cinco CSV conservados sin modificaciones
-documentacion/            Fuentes, descarga, metodología, bitácora y verificación
-tests/                    Pruebas de datos, carteras, episodios y flujo completo
+README.md                 Guía del proyecto y ejecución
+analisis.py               Análisis, simulación, exportación y controles
+requirements.txt          Dependencias del entorno
+.gitignore                Exclusiones de archivos locales y privados
+.gitattributes            Conservación de bytes al versionar archivos
+datos_originales/         Cinco CSV utilizados en el estudio
+documentacion/
+  descargas.md            Fuentes y procedimiento para volver a obtener las series
+  metodologia.md          Reglas, fórmulas y resultados de referencia
+tests/                    Pruebas del análisis y del flujo completo
 resultados/
-  tablas/                 Cinco tablas de la corrida final
-  graficos/               Tres gráficos de esa misma corrida
-  controles/              Cuatro archivos de trazabilidad y validación
+  tablas/                 Tablas generadas por la corrida final
+  graficos/               Gráficos generados por la corrida final
+  controles/              Validaciones y trazabilidad de la ejecución
 ```
 
-El entorno local `.venv/` se conserva para trabajar y se excluye de la entrega.
-`.gitattributes` evita conversiones automáticas de finales de línea que
-cambiarían las huellas SHA-256 al agregar o extraer archivos con Git.
+El entorno local `.venv/` no forma parte de la entrega.
 
 ## Datos y fuentes
 
-Los archivos deben estar en `datos_originales/`, con estos nombres y campos:
+Los archivos utilizados deben estar en `datos_originales/` con estos nombres y campos:
 
 | Archivo | Fuente | Fecha | Campo utilizado |
 | --- | --- | --- | --- |
-| VIX.csv | Cboe, VIX | `DATE`, MM/DD/AAAA | `CLOSE` |
-| PUT.csv | Cboe, PUT | `DATE`, MM/DD/AAAA | `PUT` |
-| CNDR.csv | Cboe, CNDR | `DATE`, MM/DD/AAAA | `CNDR` |
-| PPUT.csv | Cboe, PPUT | `DATE`, MM/DD/AAAA | `PPUT` |
-| SPY_Tiingo.csv | Tiingo, ETF SPY | `date`, AAAA-MM-DD | `adjClose` |
+| `VIX.csv` | Cboe, VIX | `DATE`, MM/DD/AAAA | `CLOSE` |
+| `PUT.csv` | Cboe, PUT | `DATE`, MM/DD/AAAA | `PUT` |
+| `CNDR.csv` | Cboe, CNDR | `DATE`, MM/DD/AAAA | `CNDR` |
+| `PPUT.csv` | Cboe, PPUT | `DATE`, MM/DD/AAAA | `PPUT` |
+| `SPY_Tiingo.csv` | Tiingo, ETF SPY | `date`, AAAA-MM-DD | `adjClose` |
 
-La [guía de descarga](documentacion/descargas.md) conserva los enlaces,
-formatos, procedimiento recuperado para SPY y límites de procedencia.
-[fuentes.csv](documentacion/fuentes.csv) y
-[procedencia_verificada.json](documentacion/procedencia_verificada.json)
-registran la evidencia y las huellas de los originales.
+Los cuatro históricos de Cboe son públicos. Una nueva descarga de SPY desde Tiingo requiere una cuenta y un token con acceso End-of-Day. Como los cinco CSV utilizados en el estudio están incluidos en `datos_originales/`, la ejecución del análisis no necesita conexión ni credenciales.
 
-**La descarga no está automatizada en este proyecto.** Con los CSV incluidos,
-el análisis no necesita conexión a Cboe/Tiingo ni credenciales. Una nueva
-descarga puede incorporar revisiones del proveedor: debe guardarse aparte
-para no sustituir la muestra utilizada.
+La guía de fuentes y descarga está en [`documentacion/descargas.md`](documentacion/descargas.md).
 
-## Instalación y ejecución
+## Instalación
 
-Desde PowerShell, situado en la carpeta del proyecto. El entorno verificado
-usa **Python 3.14.3**; el requisito declarado del proyecto es Python 3.12+.
-Las dependencias están fijadas en `requirements.txt`.
+El proyecto requiere Python 3.12 o superior. Las versiones verificadas de las dependencias están fijadas en `requirements.txt`.
 
-Para una instalación nueva:
+Desde PowerShell, ubicado en la carpeta del proyecto:
 
 ```powershell
 py -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
 
-Si se utiliza el entorno ya preparado, ejecutar directamente:
+También puede utilizarse otro entorno de Python 3.12+ con las mismas dependencias.
+
+## Ejecución
+
+Con el entorno activado:
+
+```powershell
+python analisis.py
+```
+
+O sin activarlo:
 
 ```powershell
 .\.venv\Scripts\python.exe analisis.py
-.\.venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
-No hace falta activar el entorno. Las rutas se resuelven desde la ubicación
-de `analisis.py`. El script no recibe argumentos y cada ejecución actualiza
-los mismos archivos de `resultados/`. Para preservar una corrida durante una
-verificación, copiar el proyecto a otra carpeta y ejecutar allí el script.
-Los tests usan carpetas temporales para sus salidas.
+Para ejecutar las pruebas:
 
-## Resultados finales
+```powershell
+python -m unittest discover -s tests -v
+```
 
-La corrida incluida es la del **11/09/2026 a las 20:05:53 UTC**. Fue contrastada
-con una ejecución aislada de la versión limpia; el detalle está en la
-[verificación de entrega](documentacion/limpieza.md).
+El script no recibe argumentos y actualiza los archivos de `resultados/`.
 
-| Tabla en `resultados/tablas/` | Lectura |
-| --- | --- |
-| [comparacion_carteras.csv](resultados/tablas/comparacion_carteras.csv) | Resultado principal: diez carteras, capital final, rendimiento acumulado, CAGR, máxima caída y estado. Siete principales y tres de sensibilidad. |
-| [capitales_mensuales.csv](resultados/tablas/capitales_mensuales.csv) | Las diez trayectorias en USD; 228 filas incluida la base. |
-| [datos_mensuales.csv](resultados/tablas/datos_mensuales.csv) | Niveles, cierres, retornos, VIX previo y regímenes 30/25; 228 filas. |
-| [aporte_episodios.csv](resultados/tablas/aporte_episodios.csv) | Atribución multiplicativa por cuatro grupos para seis condicionales; 24 filas. |
-| [descriptivos_regimen.csv](resultados/tablas/descriptivos_regimen.csv) | Estadísticas mensuales y tamaños de muestra por régimen; 16 filas. |
+## Resultados generados
 
-Los gráficos de `resultados/graficos/` muestran el VIX y los umbrales
-(`01_vix_umbrales.png`), los capitales principales (`02_capitales_vix_30.png`)
-y las caídas desde máximos (`03_caidas_vix_30.png`).
+`resultados/tablas/` contiene:
 
-Los CSV usan UTF-8 con BOM, coma, punto decimal y 15 cifras significativas.
-Los retornos mensuales son decimales; las métricas y ventajas están en %.
-Una celda vacía representa un valor ausente. En Excel, importar mediante
-**Datos → Desde texto/CSV**.
+- `comparacion_carteras.csv`: capital final, rendimiento acumulado, rendimiento anual compuesto, máxima caída y estado de las diez carteras.
+- `capitales_mensuales.csv`: trayectorias mensuales de capital.
+- `datos_mensuales.csv`: niveles, cierres, retornos, VIX previo y regímenes 30/25.
+- `aporte_episodios.csv`: atribución relativa frente a SPY por grupos de episodios.
+- `descriptivos_regimen.csv`: estadísticas mensuales por régimen de VIX.
 
-## Cómo reconocer una ejecución exitosa
+`resultados/graficos/` contiene:
 
-El proceso debe terminar con código 0 y el mensaje de verificación. Consultar
-siempre estos archivos de `resultados/controles/`:
+- `01_vix_umbrales.png`
+- `02_capitales_vix_30.png`
+- `03_caidas_vix_30.png`
 
-| Control | Qué acredita |
-| --- | --- |
-| [ejecucion.json](resultados/controles/ejecucion.json) | `estado: correcto`, `error: null`, parámetros, versiones, verificaciones y SHA-256 del código, requisitos y once salidas. |
-| [fuentes_verificadas.csv](resultados/controles/fuentes_verificadas.csv) | Cobertura, formato y SHA-256 inicial/final de cada original; `original_sin_cambios: True`. |
-| [cierres_mensuales.csv](resultados/controles/cierres_mensuales.csv) | 1.140 registros: cierre esperado/usado y disponibilidad mensual por serie. |
-| [incidencias.csv](resultados/controles/incidencias.csv) | Exclusiones, faltantes, repeticiones y, si las hubiera, interrupciones. Se conservan aunque no aparezcan en el informe. |
+`resultados/controles/` contiene:
 
-Con los originales incluidos se esperan **4.780 sesiones NYSE, 228 cierres
-por serie, 227 retornos por inversión y 10/10 carteras completas**. Hay seis
-faltantes diarios intramensuales sin imputar. Los regímenes tienen 22/205
-meses altos/bajos con umbral 30 y 45/182 con umbral 25. Las 22 pruebas deben
-terminar en `OK`.
+- `ejecucion.json`: estado de la corrida, parámetros y verificaciones.
+- `fuentes_verificadas.csv`: cobertura y controles de los cinco originales.
+- `cierres_mensuales.csv`: cierre esperado y utilizado por mes y serie.
+- `incidencias.csv`: exclusiones, faltantes y otras incidencias registradas.
 
-Un error devuelve código 1 y puede dejar salidas parciales o anteriores;
-la presencia de gráficos no demuestra éxito. Revisar también los estados
-individuales de las carteras: `estado: correcto` indica que terminó el flujo,
-y una cartera incompleta se informa por separado.
+Con los archivos incluidos se esperan 4.780 sesiones NYSE, 228 cierres por serie, 227 rendimientos por inversión y 10 de 10 carteras completas. Hay seis faltantes diarios intramensuales que no afectan los cierres mensuales requeridos.
+
+## Metodología resumida
+
+Se comparan cuatro inversiones permanentes, SPY, PUT, CNDR y PPUT, y tres carteras condicionales. Cada cartera condicional utiliza su índice asignado cuando el VIX del cierre del mes anterior es mayor o igual al umbral y mantiene SPY en los demás meses.
+
+La regla principal utiliza VIX ≥ 30. La sensibilidad repite las tres condicionales con VIX ≥ 25. La decisión se aplica al rendimiento del mes siguiente, por lo que febrero de 2007 utiliza la señal del cierre de enero de 2007.
+
+Los rendimientos mensuales se calculan entre cierres consecutivos de la última sesión NYSE de cada mes. No se interpolan ni arrastran datos. El capital se reinvierte completamente, sin aportes ni retiros.
+
+Las métricas principales son capital final, rendimiento anual compuesto y máxima caída acumulada medida con cierres mensuales.
+
+El detalle de reglas y fórmulas está en [`documentacion/metodologia.md`](documentacion/metodologia.md).
 
 ## Supuestos y limitaciones
 
-Se exige el cierre de la última sesión NYSE del mes; no se interpolan ni
-arrastran datos. Las condicionales asignan el 100% a su índice fijo si se
-cumple la señal previa y a SPY el resto. No se modelan costos adicionales de
-rotación, impuestos, aportes, retiros ni precios operativos de rebalanceo.
-SPY es un ETF con `adjClose`, no el índice oficial S&P 500 Total Return;
-no se suman dividendos nuevamente.
+La simulación utiliza niveles publicados de índices de estrategias y no reconstruye operaciones individuales con opciones. No se modelan costos adicionales de rotación, impuestos ni precios efectivos de ejecución.
 
-Las caídas se miden con cierres mensuales e incluyen el capital inicial.
-El enfoque se refinó tras observar resultados iniciales y no tiene validación
-fuera de muestra. La ventaja de capital de PPUT con umbral 30 no se mantiene
-con 25. La fecha original de descarga de los cinco CSV y la vinculación por
-huella de SPY con la petición recuperada siguen pendientes.
+SPY se trata como ETF y utiliza `adjClose`, por lo que no se suman dividendos nuevamente. La máxima caída se mide con cierres mensuales y puede no reflejar mínimos intramensuales.
 
-Las [reglas, fórmulas y resultados de referencia](documentacion/metodologia.md)
-desarrollan estos puntos. La [bitácora](documentacion/bitacora.md) documenta
-decisiones y uso de IA; la [reorganización de 2026](documentacion/reorganizacion.md)
-explica la evolución que dio lugar al análisis vigente.
+El enfoque se refinó después de observar resultados iniciales, no incluye una evaluación fuera de muestra y contiene pocos meses de VIX alto. La ventaja de capital observada para PPUT condicional con umbral 30 no se mantiene al reducir el umbral a 25, por lo que no se interpreta como evidencia de superioridad estable o futura.
+
+## Fuentes
+
+Las fuentes principales son Cboe para VIX, PUT, CNDR y PPUT, y Tiingo para SPY. Los enlaces oficiales y el procedimiento para volver a obtener las series están documentados en [`documentacion/descargas.md`](documentacion/descargas.md).
